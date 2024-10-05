@@ -1,0 +1,48 @@
+name: Build and Release Windows EXE
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up MSVC
+      uses: egor-tensin/setup-msvc@v1
+
+    - name: Build EXE
+      run: |
+        cl /EHsc clear.cpp /Fe:clear.exe
+
+    - name: Zip the EXE
+      run: |
+        powershell Compress-Archive -Path clear.exe -DestinationPath clear.zip
+
+    - name: Upload ZIP
+      uses: actions/upload-artifact@v3
+      with:
+        name: clear.zip
+        path: ./clear.zip
+
+  release:
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+    - name: Download ZIP
+      uses: actions/download-artifact@v3
+      with:
+        name: clear.zip
+
+    - name: Upload to Release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./clear.zip
+        asset_name: clear.zip
+        asset_content_type: application/zip
